@@ -39,6 +39,9 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 # ax.scatter(time, x, Temperature, s=1, color='black')
 ax.scatter(time, x, Temperature, s=1, c=Temperature, cmap='plasma')
+ax.set_xlabel('Time (s)')
+ax.set_ylabel('Distance (m)')
+ax.set_zlabel('Temperature (C)')
 # plt.draw()
 
 # Set angular frquency, given we know frequency
