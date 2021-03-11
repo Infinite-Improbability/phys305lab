@@ -51,7 +51,7 @@ w = 2 * np.pi * f
 # Equation to fit to
 def model(independent, A, B, C):
     t, x = independent
-    return A * np.exp(B * x ) * np.sin(w * t - (B * x) ) +  C
+    return A * np.exp( - B * x ) * np.sin(w * t - (B * x) ) +  C
 
 # Fit curve
 parameters, covariance = curve_fit(model, [time, x], Temperature)
