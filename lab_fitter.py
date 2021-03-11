@@ -70,3 +70,7 @@ sample_Temperature = model([Time, X], *parameters)
 
 # ax.plot_surface(Time, X, sample_Temperature, cmap='plasma', alpha=0.35)
 ax.plot_wireframe(Time, X, sample_Temperature)
+
+d = 1/parameters[1]
+D = (d ** 2) * w / 2
+print(D)
