@@ -21,10 +21,14 @@ data = raw.to_numpy()
 data = np.delete(data, 0, 0)
 
 
+# Put ambient in a variable before we remove it from data
+ambient = data[:, 1]
+
 # For every temperature measurement, associates it with time and position
 def add_independents(row):
     t = np.full(6, row[0])
-    return np.column_stack((t, x, row[3:]))
+    relative_temperature = row[3:] - row[1]
+    return np.column_stack((t, x, relative_temperature))
 
 # This produces an array for each time measurment, where each row is [t, x, T(x,t) ]
 data = np.apply_along_axis(add_independents, 1, data)
