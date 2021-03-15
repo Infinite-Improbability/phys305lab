@@ -70,24 +70,24 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         if material == 'Cu':
             t = np.full(6, row[0])
             relative_temperature = row[3:] - row[1]
+            temp_error = (row[3:] + row[1]) * 0.01 + 1.2
         elif material == 'Al':
             t = np.full(5, row[0])
             relative_temperature = row[4:] - row[1]
-        return np.column_stack((t, x, dx, relative_temperature))
+            temp_error = (row[4:] + row[1]) * 0.01 + 1.2
+        return np.column_stack((t, x, dx, relative_temperature, temp_error))
 
     # This produces an array for each time measurment,
     # where each row is [t, x, T(x,t) ]
     data = np.apply_along_axis(add_independents, 1, data)
     # Extract the rows from each time measurement array into one big array
-    data = np.reshape(data, (-1, 4))
+    data = np.reshape(data, (-1, 5))
 
     # Split columns into named vars for clarity
     # Note how the array has been transposed
-    time, x, dx, Temperature = data.T
+    time, x, dx, Temperature, dT = data.T
 
-    # Calculate error in Temperature based a C class Pt100
-    dT = Temperature * 0.01 + 0.6
-
+    # And estimate time error
     dtime = np.full(len(time), 0.5)
     dindep = [dx, dtime]
 
@@ -103,9 +103,11 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     # Fit curve
     mod = odr.Model(model)
     realData = odr.RealData([time, x], y=Temperature, sx=dindep, sy=dT)
-    myodr = odr.ODR(realData, mod, beta0=[10., 5., 5.])
+    myodr = odr.ODR(realData, mod, beta0=[11., 2., 9.])
     output = myodr.run()
     parameters = output.beta
+
+    output.pprint()
 
     if plot:
         # Plot experimental data
@@ -120,17 +122,17 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
 
         # Plot the fitted function
         sampling_time = 5 * 1000 / frequency
-        sample_time = np.linspace(0, sampling_time, 1000)
-        sample_x = np.linspace(0, 0.65, 1000)
+        sample_time = np.linspace(0, sampling_time, 750)
+        sample_x = np.linspace(0, 0.65, 750)
 
         Time, X = np.meshgrid(sample_time, sample_x, sparse=True)
 
         sample_Temperature = model(parameters, [Time, X])
 
-        ax.plot_surface(Time, X, sample_Temperature, cmap='plasma',
-                        alpha=0.5)
-        # ax.plot_wireframe(Time, X, sample_Temperature, color='black',
-        #                   alpha=0.5)
+        # ax.plot_surface(Time, X, sample_Temperature, cmap='plasma',
+        #                 alpha=0.4)
+        ax.plot_wireframe(Time, X, sample_Temperature, color='black',
+                          alpha=0.5)
 
     # Calculate diffusitivity
     return w / (2 * parameters[1] * parameters[2])
@@ -154,4 +156,4 @@ def diff_all():
 
 
 # diff_all()
-process_dataset('Cu', 1, True)
+a = process_dataset('Cu', 1, True)
