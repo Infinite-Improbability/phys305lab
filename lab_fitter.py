@@ -86,9 +86,9 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     w = 2 * np.pi * (frequency / 1000)
 
     # Equation to fit to
-    def model(independent, A, B, C, D):
+    def model(independent, A, B, C):
         t, x = independent
-        return A * np.exp(- B * x) * np.sin(w * t - (C * x)) + D
+        return A * np.exp(- B * x) * np.sin(w * t - (C * x))
 
     # Fit curve
     parameters, covariance = curve_fit(model, [time, x], Temperature)
