@@ -123,6 +123,21 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     return(D)
 
 
-process_dataset('Cu', 1)
-process_dataset('Cu', 2)
-process_dataset('Al', 1, True)
+def diff_all():
+    """Find diffustivities."""
+    diff = {}
+    for material in ['Cu', 'Al']:
+        for frequency in [1, 2]:
+            D = process_dataset(material, frequency)
+            diff['{} {}mHz'.format(material, frequency)] = D
+
+    print(diff)
+    diff_avg = {}
+    diff_avg['Cu'] = [(diff['Cu 1mHz'] + diff['Cu 2mHz']) / 2,
+                      np.abs(diff['Cu 1mHz'] - diff['Cu 2mHz']) / 2]
+    diff_avg['Al'] = [(diff['Al 1mHz'] + diff['Al 2mHz']) / 2,
+                      np.abs(diff['Al 1mHz'] - diff['Al 2mHz']) / 2]
+    print(diff_avg)
+
+
+diff_all()
