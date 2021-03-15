@@ -7,7 +7,7 @@ By Ryan for PHYS 307
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+import scipy.odr as odr
 
 
 def process_dataset(material: str, frequency: float, plot=False) -> float:
@@ -50,8 +50,10 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     # Set sensor position (in m) based on bar material
     if material == 'Cu':
         x = np.array([12, 35, 70, 150, 310, 610]) / 1000
+        dx = np.full(6, 0.015)
     elif material == 'Al':
         x = np.array([27.5, 70, 150, 310, 630]) / 1000
+        dx = np.array([0.25, 0.25, 0.25, 0.25, 0.25, 0.5]) / 100
 
     # Start processing data into a useful format
     data = raw.to_numpy()
@@ -71,37 +73,46 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         elif material == 'Al':
             t = np.full(5, row[0])
             relative_temperature = row[4:] - row[1]
-        return np.column_stack((t, x, relative_temperature))
+        return np.column_stack((t, x, dx, relative_temperature))
 
     # This produces an array for each time measurment,
     # where each row is [t, x, T(x,t) ]
     data = np.apply_along_axis(add_independents, 1, data)
     # Extract the rows from each time measurement array into one big array
-    data = np.reshape(data, (-1, 3))
+    data = np.reshape(data, (-1, 4))
 
     # Split columns into named vars for clarity
-    time, x, Temperature = data.T
+    # Note how the array has been transposed
+    time, x, dx, Temperature = data.T
 
     # Calculate error in Temperature based a C class Pt100
     dT = Temperature * 0.01 + 0.6
+
+    dtime = np.full(len(time), 0.5)
+    dindep = [dx, dtime]
 
     # Set angular frquency, given we know frequency
     w = 2 * np.pi * (frequency / 1000)
 
     # Equation to fit to
-    def model(independent, A, B, C):
+    def model(params, independent):
+        A, B, C = params
         t, x = independent
         return A * np.exp(- B * x) * np.sin(w * t - (C * x))
 
     # Fit curve
-    parameters, covariance = curve_fit(model, [time, x], Temperature, sigma=dT)
+    mod = odr.Model(model)
+    realData = odr.RealData([time, x], y=Temperature, sx=dindep, sy=dT)
+    myodr = odr.ODR(realData, mod, beta0=[10., 5., 5.])
+    output = myodr.run()
+    parameters = output.beta
 
     if plot:
         # Plot experimental data
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(time, x, Temperature, s=1, color='black')
-        # ax.scatter(time, x, Temperature, s=1, c=Temperature, cmap='plasma')
+        # ax.scatter(time, x, Temperature, s=1, color='black')
+        ax.scatter(time, x, Temperature, s=1, c=Temperature, cmap='plasma')
         ax.set_title('{} at {}mHz'.format(material, frequency))
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Distance (m)')
@@ -114,7 +125,7 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
 
         Time, X = np.meshgrid(sample_time, sample_x, sparse=True)
 
-        sample_Temperature = model([Time, X], *parameters)
+        sample_Temperature = model(parameters, [Time, X])
 
         ax.plot_surface(Time, X, sample_Temperature, cmap='plasma',
                         alpha=0.5)
@@ -142,5 +153,5 @@ def diff_all():
     print(diff_avg)
 
 
-diff_all()
+# diff_all()
 process_dataset('Cu', 1, True)
