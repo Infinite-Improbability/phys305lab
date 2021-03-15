@@ -118,7 +118,9 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         # ax.plot_wireframe(Time, X, sample_Temperature, color='black',
         #                   alpha=0.5)
 
+    # Obtain skin depth
     d = 1/parameters[1]
+    # Then from that diffusitivity
     D = (d ** 2) * w / 2
     return(D)
 
