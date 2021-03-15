@@ -82,6 +82,9 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     # Split columns into named vars for clarity
     time, x, Temperature = data.T
 
+    # Calculate error in Temperature based a C class Pt100
+    dT = Temperature * 0.01 + 0.6
+
     # Set angular frquency, given we know frequency
     w = 2 * np.pi * (frequency / 1000)
 
@@ -91,7 +94,7 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         return A * np.exp(- B * x) * np.sin(w * t - (C * x))
 
     # Fit curve
-    parameters, covariance = curve_fit(model, [time, x], Temperature)
+    parameters, covariance = curve_fit(model, [time, x], Temperature, sigma=dT)
 
     if plot:
         # Plot experimental data
