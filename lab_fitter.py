@@ -86,9 +86,9 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     w = 2 * np.pi * (frequency / 1000)
 
     # Equation to fit to
-    def model(independent, A, B, C):
+    def model(independent, A, B, C, D):
         t, x = independent
-        return A * np.exp(- B * x) * np.sin(w * t - (B * x)) + C
+        return A * np.exp(- B * x) * np.sin(w * t - (C * x)) + D
 
     # Fit curve
     parameters, covariance = curve_fit(model, [time, x], Temperature)
@@ -118,11 +118,8 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         # ax.plot_wireframe(Time, X, sample_Temperature, color='black',
         #                   alpha=0.5)
 
-    # Obtain skin depth
-    d = 1/parameters[1]
-    # Then from that diffusitivity
-    D = (d ** 2) * w / 2
-    return(D)
+    # Calculate diffusitivity
+    return w / (2 * parameters[1] * parameters[2])
 
 
 def diff_all():
