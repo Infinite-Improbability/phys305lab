@@ -70,25 +70,25 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         if material == 'Cu':
             t = np.full(6, row[0])
             relative_temperature = row[3:] - row[1]
-            temp_error = (row[3:] + row[1]) * 0.01 + 1.2
         elif material == 'Al':
             t = np.full(5, row[0])
             relative_temperature = row[4:] - row[1]
-            temp_error = (row[4:] + row[1]) * 0.01 + 1.2
-        return np.column_stack((t, x, dx, relative_temperature, temp_error))
+        return np.column_stack((t, x, dx, relative_temperature))
 
     # This produces an array for each time measurment,
     # where each row is [t, x, T(x,t) ]
     data = np.apply_along_axis(add_independents, 1, data)
     # Extract the rows from each time measurement array into one big array
-    data = np.reshape(data, (-1, 5))
+    data = np.reshape(data, (-1, 4))
 
     # Split columns into named vars for clarity
     # Note how the array has been transposed
-    time, x, dx, Temperature, dT = data.T
+    time, x, dx, Temperature = data.T
 
+    # Calculate error in Temperature based a C class Pt100
+    dT = Temperature * 0.01 + 0.6
     # And estimate time error
-    dtime = np.full(len(time), 0.5)
+    dtime = np.full(len(time), 0.01)
     dindep = [dx, dtime]
 
     # Set angular frquency, given we know frequency
@@ -113,8 +113,8 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         # Plot experimental data
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(time, x, Temperature, s=1, color='black')
-        ax.scatter(time, x, Temperature, s=1, c=Temperature, cmap='plasma')
+        ax.scatter(time, x, Temperature, s=1, color='black')
+        # ax.scatter(time, x, Temperature, s=1, c=Temperature, cmap='plasma')
         ax.set_title('{} at {}mHz'.format(material, frequency))
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Distance (m)')
@@ -129,10 +129,10 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
 
         sample_Temperature = model(parameters, [Time, X])
 
-        # ax.plot_surface(Time, X, sample_Temperature, cmap='plasma',
-        #                 alpha=0.4)
-        ax.plot_wireframe(Time, X, sample_Temperature, color='black',
-                          alpha=0.5)
+        ax.plot_surface(Time, X, sample_Temperature, cmap='plasma',
+                        alpha=0.4)
+        # ax.plot_wireframe(Time, X, sample_Temperature, color='black',
+        #                   alpha=0.5)
 
     # Calculate diffusitivity
     return w / (2 * parameters[1] * parameters[2])
