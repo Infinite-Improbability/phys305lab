@@ -1,9 +1,3 @@
-"""
-Created on Tue Mar 16 14:58:25 2021
-
-@author: RyanC
-"""
-
 import numpy as np
 from uncertainties import ufloat
 
@@ -16,7 +10,8 @@ Cu = {
           63.09 / 1000, 0.02 / 1000),
       'Tr': ufloat(80.4, 1),
       'Tw': ufloat(22.9, 0.2),
-      'Te': ufloat(29.4, 0.1)
+      'Te': ufloat(29.4, 0.1),
+      'Dt': ufloat(0.0001021, 8e-07)
     }
 
 Al = {
@@ -28,7 +23,8 @@ Al = {
           63.79 / 1000, 0.02 / 1000),
       'Tr': ufloat(91.0, 1),
       'Tw': ufloat(23.4, 0.5),
-      'Te': ufloat(26.8, 0.1)
+      'Te': ufloat(26.8, 0.1),
+      'Dt': ufloat(5e-5, 7e-7)
       }
 
 
@@ -49,7 +45,14 @@ def specific_heat(mat):
     return (mw * cw * (Te - Tw)) / (mr * (Tr - Te))
 
 
+def thermal_conductivity(mat):
+    """Calculate thermal conductivity"""
+    p = density(mat)
+    c = specific_heat(mat)
+    return mat['Dt'] * p * c
+
+
 print('Copper')
-print(specific_heat(Cu))
+print(thermal_conductivity(Cu))
 print('Aluminium')
-print(specific_heat(Al))
+print(thermal_conductivity(Al))
