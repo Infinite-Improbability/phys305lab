@@ -61,33 +61,31 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     # delete first row of zeroes
     data = np.delete(data, 0, 0)
 
-    # Put ambient in a variable before we remove it from data
-    # ambient = data[:, 1]
-
     # For every temperature measurement, associates it with time and position
     # Also dumps data from the dodgy sensor
+    # Calculates error in Temperature based a C class Pt100
     def add_independents(row):
         if material == 'Cu':
             t = np.full(6, row[0])
             relative_temperature = row[3:] - row[1]
+            temp_err = (row[3:] + row[1]) * 0.01 + 1.2
         elif material == 'Al':
             t = np.full(5, row[0])
             relative_temperature = row[4:] - row[1]
-        return np.column_stack((t, x, dx, relative_temperature))
+            temp_err = (row[3:] + row[1]) * 0.01 + 1.2
+        return np.column_stack((t, x, dx, relative_temperature, temp_err))
 
     # This produces an array for each time measurment,
     # where each row is [t, x, T(x,t) ]
     data = np.apply_along_axis(add_independents, 1, data)
     # Extract the rows from each time measurement array into one big array
-    data = np.reshape(data, (-1, 4))
+    data = np.reshape(data, (-1, 5))
 
     # Split columns into named vars for clarity
     # Note how the array has been transposed
-    time, x, dx, Temperature = data.T
+    time, x, dx, Temperature, dT = data.T
 
-    # Calculate error in Temperature based a C class Pt100
-    dT = Temperature * 0.01 + 0.6
-    # And estimate time error
+    # Estimate time error
     dtime = np.full(len(time), 0.01)
     dindep = [dx, dtime]
 
