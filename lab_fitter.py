@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.odr as odr
+from uncertainties.unumpy import uarray
 
 
-def process_dataset(material: str, frequency: float, plot=False) -> float:
+def process_dataset(material: str, frequency: float, plot=False,
+                    pr=False) -> float:
     """
     Take a set of data, fit curve and find thermal diffustivity.
 
@@ -22,6 +24,8 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         Frequency used, in mHz.
     plot : bool
         True if a plot of the curves should be shown.
+    plot : bool
+        True if the ODR output should be printed.
 
     Returns
     -------
@@ -53,7 +57,7 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         dx = np.full(6, 0.015)
     elif material == 'Al':
         x = np.array([27.5, 70, 150, 310, 630]) / 1000
-        dx = np.array([0.25, 0.25, 0.25, 0.25, 0.25, 0.5]) / 100
+        dx = np.array([0.25, 0.25, 0.25, 0.25, 0.5]) / 100
 
     # Start processing data into a useful format
     data = raw.to_numpy()
@@ -72,7 +76,7 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         elif material == 'Al':
             t = np.full(5, row[0])
             relative_temperature = row[4:] - row[1]
-            temp_err = (row[3:] + row[1]) * 0.01 + 1.2
+            temp_err = (row[4:] + row[1]) * 0.01 + 1.2
         return np.column_stack((t, x, dx, relative_temperature, temp_err))
 
     # This produces an array for each time measurment,
@@ -105,8 +109,6 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
     output = myodr.run()
     parameters = output.beta
 
-    output.pprint()
-
     if plot:
         # Plot experimental data
         fig = plt.figure()
@@ -132,8 +134,15 @@ def process_dataset(material: str, frequency: float, plot=False) -> float:
         # ax.plot_wireframe(Time, X, sample_Temperature, color='black',
         #                   alpha=0.5)
 
+    # Include sd uncertainties with parameters
+    pu = uarray(parameters, output.sd_beta)
+
+    if pr:
+        output.pprint()
+        # print(pu)
+
     # Calculate diffusitivity
-    return w / (2 * parameters[1] * parameters[2])
+    return w / (2 * pu[1] * pu[2])
 
 
 def diff_all():
@@ -146,12 +155,10 @@ def diff_all():
 
     print(diff)
     diff_avg = {}
-    diff_avg['Cu'] = [(diff['Cu 1mHz'] + diff['Cu 2mHz']) / 2,
-                      np.abs(diff['Cu 1mHz'] - diff['Cu 2mHz']) / 2]
-    diff_avg['Al'] = [(diff['Al 1mHz'] + diff['Al 2mHz']) / 2,
-                      np.abs(diff['Al 1mHz'] - diff['Al 2mHz']) / 2]
+    diff_avg['Cu'] = (diff['Cu 1mHz'] + diff['Cu 2mHz']) / 2
+    diff_avg['Al'] = (diff['Al 1mHz'] + diff['Al 2mHz']) / 2
     print(diff_avg)
 
 
-# diff_all()
-a = process_dataset('Cu', 1, True)
+diff_all()
+# process_dataset('Cu', 1, pr=True)
