@@ -34,7 +34,19 @@ def electrical_conductivity(mat):
     return sum(el_con) / 3
 
 
+# ambient
+T = ufloat(22 + 273.15, 0.5)
+
 print('Copper')
-print(electrical_conductivity(Cu))
+# thermal conductivity
+cec = electrical_conductivity(Cu)
+ctc = ufloat(485, 20)
+print(cec)
+# Should equal Lorenz number if W-F relationship holds
+print(ctc / cec / T)
+
 print('Aluminium')
-print(electrical_conductivity(Al))
+aec = electrical_conductivity(Al)
+atc = ufloat(110, 20)
+print(cec)
+print(atc / aec / T)
